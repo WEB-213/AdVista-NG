@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 10px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #22c55e;
+    }
+
+    .settings-group {
+      background: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid #334155;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .setting-item:last-child {
+      border-bottom: none;
+    }
+
+    .setting-item:hover {
+      background: #334155;
+    }
+
+    .setting-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setting-left i {
+      font-size: 18px;
+      color: #22c55e;
+      min-width: 20px;
+    }
+
+    .setting-left span {
+      font-size: 16px;
+    }
+
+    .setting-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setting-right button {
+      background: #facc15;
+      color: #0f172a;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #64748b;
+      border-radius: 24px;
+      transition: .4s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #22c55e;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    a {
+      text-decoration: none;
+      color: #f1f5f9;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2>Settings</h2>
+
+    <!-- Appearance -->
+    <div class="settings-group">
+      <div class="setting-item">
+        <div class="setting-left">
+          <i class="fas fa-moon"></i>
+          <span>Dark Mode</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="darkToggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="settings-group">
+      <div class="setting-item" onclick="window.location.href='change-password.html'">
+        <div class="setting-left">
+          <i class="fas fa-key"></i>
+          <span>Change Password</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+
+      <div class="setting-item" onclick="window.location.href='bank-details.html'">
+        <div class="setting-left">
+          <i class="fas fa-university"></i>
+          <span>Manage Bank Details</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+
+      <div class="setting-item" onclick="deleteAccount()">
+        <div class="setting-left">
+          <i class="fas fa-trash-alt"></i>
+          <span>Delete Account</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- App -->
+    <div class="settings-group">
+      <div class="setting-item" onclick="window.open('https://t.me/AdVistaNG', '_blank')">
+        <div class="setting-left">
+          <i class="fab fa-telegram-plane"></i>
+          <span>Contact Support</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+
+      <div class="setting-item" onclick="window.location.href='terms.html'">
+        <div class="setting-left">
+          <i class="fas fa-file-contract"></i>
+          <span>Terms & Privacy Policy</span>
+        </div>
+        <i class="fas fa-chevron-right"></i>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-left">
+          <i class="fas fa-bell"></i>
+          <span>Notifications</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="notifToggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-item" onclick="logoutUser()">
+        <div class="setting-left">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById("darkToggle").addEventListener("change", (e) => {
+      document.body.style.background = e.target.checked ? "#0f172a" : "#f1f5f9";
+      document.body.style.color = e.target.checked ? "#f1f5f9" : "#0f172a";
+    });
+
+    document.getElementById("notifToggle").addEventListener("change", (e) => {
+      alert(e.target.checked ? "Notifications enabled!" : "Notifications disabled!");
+      // Here you’d store notification preference in Firestore if desired.
+    });
+
+    window.logoutUser = () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    };
+
+    window.deleteAccount = () => {
+      if (confirm("Are you sure you want to permanently delete your account?")) {
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            await deleteDoc(doc(db, "users", user.uid));
+            await deleteUser(user);
+            alert("Your account has been deleted.");
+            window.location.href = "register.html";
+          }
+        });
+      }
+    };
+  </script>
+
+</body>
+</html>

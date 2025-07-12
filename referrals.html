@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referrals - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #22c55e;
+      margin-bottom: 20px;
+    }
+
+    .link-box {
+      background: #334155;
+      color: #f1f5f9;
+      padding: 15px;
+      border-radius: 5px;
+      word-break: break-all;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .copy-btn {
+      background: #facc15;
+      color: #0f172a;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .stats {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .stats p {
+      margin: 10px 0;
+      font-size: 16px;
+      color: #cbd5e1;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2>Your Referral Stats</h2>
+
+    <div class="link-box" id="referralLink">Loading...</div>
+    <button class="copy-btn" id="copyBtn">
+      <i class="fas fa-copy"></i> Copy Referral Link
+    </button>
+
+    <div class="stats">
+      <p id="refCount">Referred users: ...</p>
+      <p id="refPoints">Points earned from referrals: ...</p>
+      <p>You earn 2 points for each user you refer!</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const refLink = `https://advistang.web.app/register.html?ref=${data.username}`;
+          document.getElementById("referralLink").textContent = refLink;
+          document.getElementById("refCount").textContent = `Referred users: ${data.referrals ? data.referrals.length : 0}`;
+          document.getElementById("refPoints").textContent = `Points earned from referrals: ${data.pointsFromReferrals || 0}`;
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", () => {
+      const text = document.getElementById("referralLink").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Referral link copied!");
+      });
+    });
+  </script>
+</body>
+</html>

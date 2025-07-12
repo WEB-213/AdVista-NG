@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifications - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #1e293b;
+      border-radius: 8px;
+    }
+    .notif-list {
+      margin-top: 20px;
+    }
+    .notif {
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      background: #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .notif.unread {
+      border-left: 5px solid #facc15;
+    }
+    .notif .info {
+      flex-grow: 1;
+    }
+    .notif-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 16px;
+    }
+    .notif-message {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .notif-time {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .notif-actions button {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .actions-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .actions-bar button {
+      background: #22c55e;
+      color: #0f172a;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo">
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2>Notifications</h2>
+    <div class="actions-bar">
+      <button id="markAllBtn"><i class="fas fa-check-circle"></i> Mark All as Read</button>
+    </div>
+    <div class="notif-list" id="notifList">
+      Loading notifications...
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUser;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loadNotifications();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    async function loadNotifications() {
+      const notifList = document.getElementById("notifList");
+      notifList.innerHTML = "Loading...";
+
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "in", [currentUser.uid, "all"])
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        notifList.textContent = "No notifications.";
+        return;
+      }
+
+      notifList.innerHTML = "";
+
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "notif" + (data.read ? "" : " unread");
+
+        let color;
+        switch (data.type) {
+          case "withdrawal":
+            color = "#3b82f6";
+            break;
+          case "bonus":
+            color = "#22c55e";
+            break;
+          case "system":
+            color = "#f59e0b";
+            break;
+          default:
+            color = "#f1f5f9";
+        }
+
+        div.style.borderLeft = `5px solid ${color}`;
+
+        div.innerHTML = `
+          <div class="info">
+            <div class="notif-title">${data.title}</div>
+            <div class="notif-message">${data.message}</div>
+            <div class="notif-time">${new Date(data.timestamp).toLocaleString()}</div>
+          </div>
+          <div class="notif-actions">
+            <button onclick="deleteNotification('${docSnap.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        `;
+
+        notifList.appendChild(div);
+      });
+    }
+
+    window.deleteNotification = async (id) => {
+      await deleteDoc(doc(db, "notifications", id));
+      loadNotifications();
+    };
+
+    document.getElementById("markAllBtn").addEventListener("click", async () => {
+      const q = query(
+        collection(db, "notifications"),
+        where("userId", "in", [currentUser.uid, "all"])
+      );
+
+      const querySnapshot = await getDocs(q);
+      for (const docSnap of querySnapshot.docs) {
+        if (!docSnap.data().read) {
+          await updateDoc(doc(db, "notifications", docSnap.id), {
+            read: true
+          });
+        }
+      }
+      loadNotifications();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header .logout-btn {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .balance-card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .balance-card h2 {
+      margin: 0;
+      font-size: 28px;
+      color: #22c55e;
+    }
+
+    .balance-card p {
+      margin: 5px 0 0;
+      font-size: 18px;
+      color: #94a3b8;
+    }
+
+    .progress-container {
+      background: #334155;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 15px;
+      height: 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #22c55e;
+      transition: width 0.4s ease;
+    }
+
+    .cardholder {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-top: 10px;
+    }
+
+    .joined {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .feature-tile {
+      background: #1e293b;
+      border-radius: 8px;
+      text-align: center;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .feature-tile:hover {
+      background: #334155;
+      transform: translateY(-3px);
+    }
+
+    .feature-tile i {
+      font-size: 24px;
+      color: #22c55e;
+      margin-bottom: 8px;
+    }
+
+    .feature-tile span {
+      color: #f1f5f9;
+      font-size: 14px;
+    }
+  </style>
+
+  <!-- FontAwesome icons -->
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+  </header>
+
+  <div class="container">
+    <div class="balance-card">
+      <h2 id="pointsDisplay">Loading...</h2>
+      <p id="nairaEquivalent">₦0</p>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="cardholder" id="cardholder"></div>
+      <div class="joined" id="joined"></div>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-tile" onclick="location.href='earn.html'">
+        <i class="fas fa-play-circle"></i>
+        <span>Earn</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='referrals.html'">
+        <i class="fas fa-users"></i>
+        <span>Referrals</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='transactions.html'">
+        <i class="fas fa-receipt"></i>
+        <span>Transactions</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='notifications.html'">
+        <i class="fas fa-bell"></i>
+        <span>Notifications</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='profile.html'">
+        <i class="fas fa-user"></i>
+        <span>Profile</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='settings.html'">
+        <i class="fas fa-cog"></i>
+        <span>Settings</span>
+      </div>
+      <div class="feature-tile" onclick="location.href='withdraw.html'">
+        <i class="fas fa-wallet"></i>
+        <span>Withdraw</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let exchangeRate = 2; // fallback default
+    let minWithdraw = 5000; // fallback default
+
+    async function fetchSettings() {
+      try {
+        const configDoc = doc(db, "settings", "appConfig");
+        const snap = await getDoc(configDoc);
+        if (snap.exists()) {
+          const data = snap.data();
+          exchangeRate = data.exchangeRate || exchangeRate;
+          minWithdraw = data.minWithdraw || minWithdraw;
+        }
+      } catch (e) {
+        console.error("Error loading settings:", e);
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      await fetchSettings();
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const points = userData.points || 0;
+        const nairaEquivalent = (points * exchangeRate).toFixed(2);
+
+        document.getElementById("pointsDisplay").textContent = `${points} Points`;
+        document.getElementById("nairaEquivalent").textContent = `₦${nairaEquivalent}`;
+        document.getElementById("cardholder").textContent = `Cardholder: ${userData.username || "Unknown"}`;
+        document.getElementById("joined").textContent = `Member Since: ${userData.joined || "N/A"}`;
+
+        const percent = Math.min((points / minWithdraw) * 100, 100);
+        document.getElementById("progressBar").style.width = `${percent}%`;
+      } else {
+        alert("User data not found!");
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    });
+  </script>
+
+</body>
+</html>

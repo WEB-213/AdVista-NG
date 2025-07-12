@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AdVistaNG - Watch and Earn</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(160deg, #0f172a, #1e293b);
+      color: #f1f5f9;
+      overflow: hidden;
+    }
+
+    .background-logo {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 600px;
+      height: 600px;
+      margin-left: -300px;
+      margin-top: -300px;
+      opacity: 0.08; /* increased slightly for visibility */
+      animation: spin 60s linear infinite;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    header, main, footer {
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 20px 20px;
+      text-align: center;
+    }
+
+    header img.logo-small {
+      height: 50px;
+      margin-bottom: 10px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      color: #22c55e;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 1.1em;
+      margin-top: 5px;
+    }
+
+    main {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 60vh;
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    main div {
+      max-width: 600px;
+    }
+
+    main p {
+      font-size: 1.2em;
+      color: #cbd5e1;
+      margin-bottom: 30px;
+    }
+
+    main a {
+      background: #22c55e;
+      color: #0f172a;
+      padding: 15px 40px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1.1em;
+      transition: background 0.3s, color 0.3s;
+      display: inline-block;
+    }
+
+    main a:hover {
+      background: #16a34a;
+      color: #ffffff;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.9em;
+      padding: 20px;
+      color: #64748b;
+      background: #1e293b;
+    }
+
+    footer a {
+      color: #22c55e;
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Spinning background logo -->
+  <img src="logo.png" alt="AdVistaNG Logo" class="background-logo" />
+
+  <header>
+    <!-- Small logo in the header -->
+    <img src="logo.png" alt="AdVistaNG Logo Small" class="logo-small" />
+    <h1>AdVistaNG</h1>
+    <p>Turn Your Time Into Earnings.</p>
+  </header>
+
+  <main>
+    <div>
+      <p>Start earning rewards for watching videos and completing offers on Nigeria’s premier watch-and-earn platform.</p>
+      <a href="register.html">Get Started</a>
+    </div>
+  </main>
+
+  <footer>
+    <a href="privacy.html">Privacy Policy</a> |
+    <a href="terms.html">Terms of Service</a>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transactions - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1e293b;
+      border-radius: 8px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #22c55e;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+    }
+
+    th {
+      background: #334155;
+      color: #facc15;
+    }
+
+    tr:nth-child(even) {
+      background: #334155;
+    }
+
+    tr:nth-child(odd) {
+      background: #1e293b;
+    }
+
+    .positive {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .negative {
+      color: #ef4444;
+      font-weight: bold;
+    }
+
+    .pending {
+      color: #facc15;
+      font-weight: bold;
+    }
+
+    .completed {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .failed {
+      color: #ef4444;
+      font-weight: bold;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2><i class="fas fa-receipt"></i> Transaction History</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Type</th>
+          <th>Points</th>
+          <th>Naira</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="transactionRows">
+        <tr>
+          <td colspan="5">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const transactionsRef = collection(db, "users", user.uid, "transactions");
+      const q = query(transactionsRef, orderBy("timestamp", "desc"));
+      const querySnapshot = await getDocs(q);
+
+      const tbody = document.getElementById("transactionRows");
+      tbody.innerHTML = "";
+
+      if (querySnapshot.empty) {
+        tbody.innerHTML = "<tr><td colspan='5'>No transactions found.</td></tr>";
+        return;
+      }
+
+      querySnapshot.forEach((docSnap) => {
+        const tx = docSnap.data();
+
+        const row = document.createElement("tr");
+
+        const dateCell = document.createElement("td");
+        const date = tx.timestamp?.toDate ? tx.timestamp.toDate() : new Date(tx.timestamp);
+        dateCell.textContent = date.toLocaleString();
+        row.appendChild(dateCell);
+
+        const typeCell = document.createElement("td");
+        typeCell.textContent = formatType(tx.type);
+        row.appendChild(typeCell);
+
+        const pointsCell = document.createElement("td");
+        pointsCell.textContent = (tx.points >= 0 ? "+" : "") + tx.points;
+        pointsCell.className = tx.points >= 0 ? "positive" : "negative";
+        row.appendChild(pointsCell);
+
+        const nairaCell = document.createElement("td");
+        nairaCell.textContent = tx.nairaAmount ? "₦" + tx.nairaAmount : "-";
+        row.appendChild(nairaCell);
+
+        const statusCell = document.createElement("td");
+        statusCell.textContent = capitalize(tx.status || "completed");
+        statusCell.className = tx.status || "completed";
+        row.appendChild(statusCell);
+
+        tbody.appendChild(row);
+      });
+    });
+
+    function formatType(type) {
+      const map = {
+        earn: "Earning (Task)",
+        referral_bonus: "Referral Bonus",
+        welcome_bonus: "Welcome Bonus",
+        withdrawal: "Withdrawal",
+        admin_bonus: "Admin Bonus",
+        upgrade_payment: "Tier Upgrade"
+      };
+      return map[type] || type;
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+  </script>
+
+</body>
+</html>

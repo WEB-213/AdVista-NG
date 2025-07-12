@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Withdrawals | AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #334155;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background: #1e293b;
+    }
+    tr:nth-child(even) {
+      background: #1e293b;
+    }
+    .btn {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .approve {
+      background: #22c55e;
+      color: #0f172a;
+    }
+    .decline {
+      background: #ef4444;
+      color: #fff;
+      margin-left: 5px;
+    }
+    .status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status.pending {
+      background: #facc15;
+      color: #0f172a;
+    }
+    .status.approved {
+      background: #22c55e;
+      color: #0f172a;
+    }
+    .status.declined {
+      background: #ef4444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo">
+    <button onclick="window.location.href='admin-dashboard.html'">Back to Dashboard</button>
+  </header>
+
+  <div class="container">
+    <h2>Withdrawal Requests</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Points</th>
+          <th>Naira</th>
+          <th>Bank Name</th>
+          <th>Account Number</th>
+          <th>Account Name</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="withdrawalsTable">
+        <tr><td colspan="9">Loading withdrawals...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const withdrawalsTable = document.getElementById("withdrawalsTable");
+
+    async function loadWithdrawals() {
+      const querySnapshot = await getDocs(collection(db, "withdrawals"));
+      withdrawalsTable.innerHTML = "";
+
+      querySnapshot.forEach(async (docSnap) => {
+        const data = docSnap.data();
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.username}</td>
+          <td>${data.amountPoints}</td>
+          <td>₦${data.amountNaira}</td>
+          <td>${data.bankName}</td>
+          <td>${data.accountNumber}</td>
+          <td>${data.accountName}</td>
+          <td>${data.requestedAt?.toDate().toLocaleString() || ""}</td>
+          <td><span class="status ${data.status}">${data.status}</span></td>
+          <td>
+            <button class="btn approve" ${data.status !== "pending" ? "disabled" : ""} onclick="approveWithdrawal('${docSnap.id}', '${data.userId}', ${data.amountPoints})">Approve</button>
+            <button class="btn decline" ${data.status !== "pending" ? "disabled" : ""} onclick="declineWithdrawal('${docSnap.id}')">Decline</button>
+          </td>
+        `;
+        withdrawalsTable.appendChild(tr);
+      });
+    }
+
+    window.approveWithdrawal = async (docId, userId, points) => {
+      const userDocRef = doc(db, "users", userId);
+      const userSnap = await getDoc(userDocRef);
+
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        const newPoints = (userData.points || 0) - points;
+        await updateDoc(userDocRef, { points: newPoints });
+      }
+
+      await updateDoc(doc(db, "withdrawals", docId), { status: "approved" });
+      alert("Withdrawal approved!");
+      loadWithdrawals();
+    };
+
+    window.declineWithdrawal = async (docId) => {
+      await updateDoc(doc(db, "withdrawals", docId), { status: "declined" });
+      alert("Withdrawal declined!");
+      loadWithdrawals();
+    };
+
+    loadWithdrawals();
+  </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - AdVistaNG</title>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js" type="module"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js" type="module"></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .logo {
+      max-width: 180px;
+      margin: 0 auto 20px;
+    }
+    h2 {
+      color: #22c55e;
+      margin-top: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      text-align: left;
+      color: #94a3b8;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    input {
+      background: #334155;
+      color: #f1f5f9;
+    }
+    button {
+      background: #22c55e;
+      color: #0f172a;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .error {
+      color: #f87171;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .link {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .link a {
+      color: #22c55e;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="logo.png" alt="AdVistaNG Logo" class="logo" />
+
+    <h2>Create Your Account</h2>
+    <form id="registerForm">
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" required />
+
+      <label for="username">Username</label>
+      <input type="text" id="username" required />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" required />
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input type="password" id="confirmPassword" required />
+
+      <label for="referral">Referral Code (optional)</label>
+      <input type="text" id="referral" />
+
+      <label>
+        <input type="checkbox" id="terms" />
+        I agree to the <a href="terms.html" style="color: #22c55e;">Terms</a> and <a href="privacy.html" style="color: #22c55e;">Privacy Policy</a>
+      </label>
+
+      <div class="g-recaptcha" data-sitekey="6LcJ8X8rAAAAAO5M1loztFPtbtLCD8mW9CU-Ltnz"></div>
+
+      <button type="submit">Register</button>
+
+      <p id="message" class="error"></p>
+
+      <div class="link">
+        <a href="login.html">Already have an account? Login</a>
+      </div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fullName = document.getElementById("fullName").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const referral = document.getElementById("referral").value.trim();
+      const termsChecked = document.getElementById("terms").checked;
+      const recaptchaToken = grecaptcha.getResponse();
+
+      const messageEl = document.getElementById("message");
+      messageEl.textContent = "";
+      messageEl.style.color = "#f87171";
+
+      if (!recaptchaToken) {
+        messageEl.textContent = "Please complete the reCAPTCHA.";
+        return;
+      }
+
+      if (!fullName || !username || !email || !password || !confirmPassword) {
+        messageEl.textContent = "All fields except referral are required.";
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        messageEl.textContent = "Passwords do not match.";
+        return;
+      }
+
+      const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+      if (!regex.test(password)) {
+        messageEl.textContent = "Password must be at least 8 characters, include uppercase, number, and special character.";
+        return;
+      }
+
+      if (!termsChecked) {
+        messageEl.textContent = "You must agree to Terms and Privacy Policy.";
+        return;
+      }
+
+      const usernameDoc = await getDoc(doc(db, "usernames", username));
+      if (usernameDoc.exists()) {
+        messageEl.textContent = "Username already taken. Choose another.";
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await sendEmailVerification(user);
+
+        await setDoc(doc(db, "usernames", username), {
+          uid: user.uid
+        });
+
+        await setDoc(doc(db, "users", user.uid), {
+          fullName,
+          username,
+          email,
+          referralCode: referral || null,
+          pointsBalance: 20,
+          emailVerified: false,
+          createdAt: new Date().toISOString()
+        });
+
+        if (referral) {
+          const refDoc = await getDoc(doc(db, "usernames", referral));

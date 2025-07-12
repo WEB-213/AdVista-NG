@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Users | AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    h2 {
+      color: #22c55e;
+      margin-bottom: 20px;
+    }
+    input, select {
+      padding: 8px;
+      background: #334155;
+      color: #f1f5f9;
+      border: none;
+      border-radius: 4px;
+      margin-right: 10px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px;
+      background: #1e293b;
+      color: #f1f5f9;
+      border-bottom: 1px solid #334155;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background: #334155;
+    }
+    button.action {
+      background: #facc15;
+      color: #0f172a;
+      border: none;
+      padding: 6px 10px;
+      margin: 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      width: 500px;
+      max-width: 95%;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      color: #22c55e;
+    }
+    .modal-content p {
+      margin: 10px 0;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+    .modal-content input, .modal-content select {
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 15px;
+    }
+    .close-btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="AdVistaNG Logo" />
+  <button onclick="window.location.href='admin-dashboard.html'">Back to Admin Dashboard</button>
+</header>
+
+<div class="container">
+  <h2>Manage Users</h2>
+
+  <input type="text" id="searchInput" placeholder="Search username or email..." />
+  <select id="tierFilter">
+    <option value="">All Tiers</option>
+    <option value="basic">Basic</option>
+    <option value="mid">Mid</option>
+    <option value="top">Top</option>
+  </select>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Tier</th>
+        <th>Points</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userTableBody">
+      <!-- Users will load here -->
+    </tbody>
+  </table>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal" id="userModal">
+  <div class="modal-content">
+    <h3 id="modalUsername"></h3>
+    <p>Email: <span id="modalEmail"></span></p>
+    <p>Tier: <span id="modalTier"></span></p>
+    <p>Points: <span id="modalPoints"></span></p>
+    <p>Referred By: <span id="modalReferredBy"></span></p>
+    <p>Joined: <span id="modalJoined"></span></p>
+
+    <label>Change Tier:</label>
+    <select id="tierSelect">
+      <option value="basic">Basic</option>
+      <option value="mid">Mid</option>
+      <option value="top">Top</option>
+    </select>
+
+    <label>Add Points:</label>
+    <input type="number" id="addPoints" placeholder="Enter points to add" />
+
+    <button class="action" onclick="updateUser()">Save Changes</button>
+    <button class="action" onclick="blockUser()">Block User</button>
+    <button class="action" onclick="deleteUser()">Delete User</button>
+    <button class="close-btn" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+    authDomain: "advistang.firebaseapp.com",
+    projectId: "advistang",
+    storageBucket: "advistang.appspot.com",
+    messagingSenderId: "704637913536",
+    appId: "1:704637913536:web:d13da56c15f419e2f26025"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let usersData = [];
+
+  async function loadUsers() {
+    const usersRef = collection(db, "users");
+    const snapshot = await getDocs(usersRef);
+    usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderUsers(usersData);
+  }
+
+  function renderUsers(data) {
+    const tbody = document.getElementById("userTableBody");
+    tbody.innerHTML = "";
+    data.forEach(u => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${u.username}</td>
+        <td>${u.email}</td>
+        <td>${u.tier}</td>
+        <td>${u.points}</td>
+        <td>${u.status || 'active'}</td>
+        <td>
+          <button class="action" onclick="openModal('${u.id}')">View</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  window.openModal = async (userId) => {
+    const userDoc = await getDoc(doc(db, "users", userId));
+    if (!userDoc.exists()) return;
+
+    const user = userDoc.data();
+    document.getElementById("modalUsername").textContent = user.username;
+    document.getElementById("modalEmail").textContent = user.email;
+    document.getElementById("modalTier").textContent = user.tier;
+    document.getElementById("modalPoints").textContent = user.points;
+    document.getElementById("modalReferredBy").textContent = user.referredBy || "None";
+    document.getElementById("modalJoined").textContent = user.joined;
+
+    document.getElementById("tierSelect").value = user.tier;
+    document.getElementById("addPoints").value = "";
+
+    document.getElementById("userModal").style.display = "flex";
+    window.currentUserId = userId;
+  };
+
+  window.updateUser = async () => {
+    const tier = document.getElementById("tierSelect").value;
+    const pointsToAdd = parseInt(document.getElementById("addPoints").value) || 0;
+
+    const userRef = doc(db, "users", window.currentUserId);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) return;
+
+    const currentData = userDoc.data();
+    await updateDoc(userRef, {
+      tier,
+      points: currentData.points + pointsToAdd
+    });
+    alert("User updated successfully!");
+    closeModal();
+    loadUsers();
+  };
+
+  window.blockUser = async () => {
+    if (confirm("Block this user?")) {
+      await updateDoc(doc(db, "users", window.currentUserId), {
+        status: "blocked"
+      });
+      alert("User blocked.");
+      closeModal();
+      loadUsers();
+    }
+  };
+
+  window.deleteUser = async () => {
+    if (confirm("Delete this user permanently?")) {
+      await deleteDoc(doc(db, "users", window.currentUserId));
+      alert("User deleted.");
+      closeModal();
+      loadUsers();
+    }
+  };
+
+  window.closeModal = () => {
+    document.getElementById("userModal").style.display = "none";
+  };
+
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    const search = e.target.value.toLowerCase();
+    renderUsers(usersData.filter(u =>
+      u.username.toLowerCase().includes(search) ||
+      u.email.toLowerCase().includes(search)
+    ));
+  });
+
+  document.getElementById("tierFilter").addEventListener("change", (e) => {
+    const value = e.target.value;
+    renderUsers(value ? usersData.filter(u => u.tier === value) : usersData);
+  });
+
+  loadUsers();
+</script>
+
+</body>
+</html>

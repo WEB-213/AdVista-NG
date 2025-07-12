@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Withdraw Funds - AdVistaNG</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 30px;
+    }
+    h2 {
+      color: #22c55e;
+    }
+    form {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      color: #94a3b8;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: none;
+      font-size: 16px;
+    }
+    input, select {
+      background: #334155;
+      color: #f1f5f9;
+    }
+    button {
+      background: #22c55e;
+      color: #0f172a;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #resolveMessage {
+      margin-top: 10px;
+      color: #facc15;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Withdraw Funds</h2>
+
+  <form id="withdrawForm">
+    <label for="bankSelect">Select Bank:</label>
+    <select id="bankSelect">
+      <option value="">Select your bank</option>
+    </select>
+
+    <label for="accountNumber">Account Number:</label>
+    <input type="text" id="accountNumber" placeholder="Enter your account number" maxlength="10" />
+
+    <button type="button" id="checkBtn">Check Account Name</button>
+
+    <label for="accountName">Account Name:</label>
+    <input type="text" id="accountName" readonly placeholder="Account name will appear here" />
+
+    <label for="amount">Withdrawal Amount (₦):</label>
+    <input type="number" id="amount" placeholder="Enter amount to withdraw" />
+
+    <button type="submit">Submit Withdrawal</button>
+    <p id="resolveMessage"></p>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const banks = [
+      { name: "Access Bank", code: "044" },
+      { name: "GTBank", code: "058" },
+      { name: "UBA", code: "033" },
+      { name: "Zenith Bank", code: "057" },
+      { name: "First Bank", code: "011" },
+      { name: "Fidelity Bank", code: "070" },
+      { name: "Union Bank", code: "032" },
+      { name: "Wema Bank", code: "035" }
+    ];
+
+    const bankSelect = document.getElementById("bankSelect");
+    banks.forEach(bank => {
+      const option = document.createElement("option");
+      option.value = bank.code;
+      option.textContent = bank.name;
+      bankSelect.appendChild(option);
+    });
+
+    let currentUser = null;
+    let currentTier = "basic";
+    let currentPoints = 0;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          currentTier = data.tier || "basic";
+          currentPoints = data.points || 0;
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", async () => {
+      const accountNumber = document.getElementById("accountNumber").value.trim();
+      const bankCode = document.getElementById("bankSelect").value;
+      const resolveMessage = document.getElementById("resolveMessage");
+      const accountNameInput = document.getElementById("accountName");
+
+      if (!accountNumber || !bankCode) {
+        alert("Please select a bank and enter account number.");
+        return;
+      }
+
+      resolveMessage.textContent = "Verifying account name...";
+
+      try {
+        const res = await fetch("/api/resolve-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ account_number: accountNumber, bank_code: bankCode })
+        });
+
+        const data = await res.json();
+
+        if (data.status) {
+          accountNameInput.value = data.data.account_name;
+          resolveMessage.textContent = "Account verified successfully!";
+        } else {
+          accountNameInput.value = "";
+          resolveMessage.textContent = "Verification failed: " + data.message;
+        }
+      } catch (err) {
+        console.error(err);
+        accountNameInput.value = "";
+        resolveMessage.textContent = "Error connecting to verification service.";
+      }
+    });
+
+    document.getElementById("withdrawForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const accountNumber = document.getElementById("accountNumber").value.trim();
+      const accountName = document.getElementById("accountName").value.trim();
+      const bankCode = document.getElementById("bankSelect").value;
+      const amount = parseInt(document.getElementById("amount").value.trim());
+
+      const minPoints = currentTier === "top" ? 500 :
+                        currentTier === "mid" ? 800 :
+                        999;
+
+      if (currentPoints < minPoints) {
+        alert(`You need at least ${minPoints} points to withdraw.`);
+        return;
+      }
+
+      if (!accountNumber || !accountName || !amount || amount <= 0) {
+        alert("Please complete all fields correctly.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "withdrawals"), {
+          userId: currentUser.uid,
+          accountName,
+          accountNumber,
+          bankCode,
+          amount,
+          status: "pending",
+          createdAt: serverTimestamp()
+        });
+
+        alert("Withdrawal request submitted! Admin will review shortly.");
+        document.getElementById("withdrawForm").reset();
+      } catch (err) {
+        console.error(err);
+        alert("Error submitting withdrawal. Please try again.");
+      }
+    });
+  </script>
+</body>
+</html>

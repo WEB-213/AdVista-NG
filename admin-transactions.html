@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Transactions | AdVistaNG</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+    h2 {
+      color: #22c55e;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table th, table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #334155;
+    }
+    table th {
+      background: #1e293b;
+      color: #facc15;
+    }
+    tr:nth-child(even) {
+      background: #1e293b;
+    }
+    .action-btn {
+      background: #22c55e;
+      border: none;
+      color: #0f172a;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-right: 5px;
+    }
+    .action-btn.reject {
+      background: #ef4444;
+      color: #fff;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .filters input, .filters select {
+      padding: 8px;
+      background: #334155;
+      color: #f1f5f9;
+      border: none;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='admin-dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2>Transactions</h2>
+
+    <div class="filters">
+      <input type="text" id="searchInput" placeholder="Search by username/email">
+      <select id="typeFilter">
+        <option value="">All Types</option>
+        <option value="earn">Earn</option>
+        <option value="bonus">Bonus</option>
+        <option value="referral">Referral</option>
+        <option value="withdrawal">Withdrawal</option>
+      </select>
+      <select id="statusFilter">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+      <button class="action-btn" id="filterBtn">Filter</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Txn ID</th>
+          <th>User</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Currency</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="transactionTableBody">
+        <tr><td colspan="8">Loading transactions...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let transactions = [];
+
+    async function fetchTransactions() {
+      const snapshot = await getDocs(collection(db, "transactions"));
+      transactions = [];
+      snapshot.forEach(docSnap => {
+        transactions.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderTable(transactions);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("transactionTableBody");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8">No transactions found.</td></tr>`;
+        return;
+      }
+
+      data.forEach(txn => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${txn.id}</td>
+          <td>${txn.username || ""}</td>
+          <td>${txn.type}</td>
+          <td>${txn.amount}</td>
+          <td>${txn.currency || "Points"}</td>
+          <td>${new Date(txn.date).toLocaleString()}</td>
+          <td>${txn.status}</td>
+          <td>
+            ${txn.type === "withdrawal" && txn.status === "pending" ? `
+              <button class="action-btn" onclick="approve('${txn.id}')">Approve</button>
+              <button class="action-btn reject" onclick="reject('${txn.id}')">Reject</button>
+            ` : "-"}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("filterBtn").addEventListener("click", () => {
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      const type = document.getElementById("typeFilter").value;
+      const status = document.getElementById("statusFilter").value;
+
+      let filtered = [...transactions];
+
+      if (search) {
+        filtered = filtered.filter(txn => 
+          (txn.username || "").toLowerCase().includes(search) ||
+          (txn.email || "").toLowerCase().includes(search)
+        );
+      }
+
+      if (type) {
+        filtered = filtered.filter(txn => txn.type === type);
+      }
+
+      if (status) {
+        filtered = filtered.filter(txn => txn.status === status);
+      }
+
+      renderTable(filtered);
+    });
+
+    window.approve = async (txnId) => {
+      await updateDoc(doc(db, "transactions", txnId), {
+        status: "approved"
+      });
+      alert("Transaction approved!");
+      fetchTransactions();
+    };
+
+    window.reject = async (txnId) => {
+      await updateDoc(doc(db, "transactions", txnId), {
+        status: "rejected"
+      });
+      alert("Transaction rejected!");
+      fetchTransactions();
+    };
+
+    fetchTransactions();
+  </script>
+
+</body>
+</html>

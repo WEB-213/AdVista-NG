@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Manage Tasks | AdVistaNG</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      color: #22c55e;
+    }
+    form, .tasks-list {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      color: #94a3b8;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: none;
+      background: #334155;
+      color: #f1f5f9;
+      font-size: 15px;
+    }
+    .checkbox-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    .checkbox-group label {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+    button {
+      background: #22c55e;
+      color: #0f172a;
+      border: none;
+      padding: 12px;
+      margin-top: 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #message {
+      margin-top: 10px;
+      color: #facc15;
+      text-align: center;
+    }
+    .task-card {
+      background: #334155;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+    .task-card h4 {
+      margin: 0;
+      color: #facc15;
+    }
+    .task-card p {
+      font-size: 14px;
+      margin: 5px 0;
+      color: #cbd5e1;
+    }
+    .task-card button {
+      background: #ef4444;
+      color: #fff;
+      margin-right: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .filters {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .filters select {
+      width: auto;
+      background: #334155;
+      color: #f1f5f9;
+      border: none;
+      border-radius: 4px;
+      padding: 8px;
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Create / Edit Task</h2>
+
+  <form id="taskForm">
+    <input type="hidden" id="taskId" />
+    <label for="title">Task Title:</label>
+    <input type="text" id="title" required />
+
+    <label for="points">Reward Points:</label>
+    <input type="number" id="points" required />
+
+    <label>Eligible Tiers:</label>
+    <div class="checkbox-group">
+      <label><input type="checkbox" value="basic" /> Basic</label>
+      <label><input type="checkbox" value="mid" /> Mid</label>
+      <label><input type="checkbox" value="top" /> Top</label>
+    </div>
+
+    <label for="html">Task HTML/JS Ad Code:</label>
+    <textarea id="html" rows="6" placeholder="Paste ad code or iframe here..." required></textarea>
+
+    <button type="submit">Save Task</button>
+    <p id="message"></p>
+  </form>
+
+  <div class="filters">
+    <label for="tierFilter">Filter by Tier:</label>
+    <select id="tierFilter">
+      <option value="">All Tiers</option>
+      <option value="basic">Basic</option>
+      <option value="mid">Mid</option>
+      <option value="top">Top</option>
+    </select>
+  </div>
+
+  <div class="tasks-list" id="tasksList">
+    <h2>Existing Tasks</h2>
+    <div id="tasksContainer"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const taskForm = document.getElementById("taskForm");
+    const messageEl = document.getElementById("message");
+    const tasksContainer = document.getElementById("tasksContainer");
+    const tierFilter = document.getElementById("tierFilter");
+
+    async function fetchTasks() {
+      tasksContainer.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "tasks"));
+      querySnapshot.forEach((docSnap) => {
+        const task = docSnap.data();
+        if (
+          !tierFilter.value ||
+          task.eligibleTiers.includes(tierFilter.value)
+        ) {
+          tasksContainer.innerHTML += `
+            <div class="task-card">
+              <h4>${task.title}</h4>
+              <p>Points: ${task.points}</p>
+              <p>Tiers: ${task.eligibleTiers.join(", ")}</p>
+              <p style="white-space: pre-line; overflow-wrap: anywhere;">${task.contentHtml}</p>
+              <button onclick="editTask('${docSnap.id}')">Edit</button>
+              <button onclick="deleteTask('${docSnap.id}')">Delete</button>
+            </div>
+          `;
+        }
+      });
+    }
+
+    fetchTasks();
+
+    tierFilter.addEventListener("change", fetchTasks);
+
+    taskForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const id = document.getElementById("taskId").value;
+      const title = document.getElementById("title").value.trim();
+      const points = parseInt(document.getElementById("points").value.trim());
+      const html = document.getElementById("html").value.trim();
+      const tiers = Array.from(document.querySelectorAll(".checkbox-group input:checked")).map(cb => cb.value);
+
+      if (!title || !points || !html || tiers.length === 0) {
+        messageEl.textContent = "Please fill all fields.";
+        return;
+      }
+
+      if (id) {
+        await updateDoc(doc(db, "tasks", id), {
+          title,
+          points,
+          contentHtml: html,
+          eligibleTiers: tiers
+        });
+        messageEl.textContent = "Task updated!";
+      } else {
+        await addDoc(collection(db, "tasks"), {
+          title,
+          points,
+          contentHtml: html,
+          eligibleTiers: tiers,
+          createdAt: serverTimestamp()
+        });
+        messageEl.textContent = "Task added!";
+      }
+
+      taskForm.reset();
+      document.getElementById("taskId").value = "";
+      fetchTasks();
+    });
+
+    window.editTask = async (id) => {
+      const docRef = doc(db, "tasks", id);
+      const docSnap = await getDocs(collection(db, "tasks"));
+      const allTasks = [];
+      docSnap.forEach((d) => {
+        if (d.id === id) {
+          const task = d.data();
+          document.getElementById("taskId").value = id;
+          document.getElementById("title").value = task.title;
+          document.getElementById("points").value = task.points;
+          document.getElementById("html").value = task.contentHtml;
+          document.querySelectorAll(".checkbox-group input").forEach(cb => {
+            cb.checked = task.eligibleTiers.includes(cb.value);
+          });
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.deleteTask = async (id) => {
+      if (confirm("Are you sure you want to delete this task?")) {
+        await deleteDoc(doc(db, "tasks", id));
+        messageEl.textContent = "Task deleted!";
+        fetchTasks();
+      }
+    };
+  </script>
+
+</body>
+</html>

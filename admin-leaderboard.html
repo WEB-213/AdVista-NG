@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Leaderboard | AdVistaNG</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 8px;
+    }
+    h2 {
+      color: #22c55e;
+      margin-top: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background: #334155;
+    }
+    tr:nth-child(even) {
+      background: #0f172a;
+    }
+    tr:nth-child(odd) {
+      background: #1e293b;
+    }
+    td {
+      border-bottom: 1px solid #334155;
+    }
+    .rank {
+      font-weight: bold;
+      color: #facc15;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='admin-dashboard.html'">Back to Dashboard</button>
+  </header>
+
+  <div class="container">
+    <h2>Top Users Leaderboard</h2>
+    <table id="leaderboardTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Username</th>
+          <th>Points</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rankings will be inserted here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const leaderboardTable = document.querySelector("#leaderboardTable tbody");
+
+    async function loadLeaderboard() {
+      const q = query(collection(db, "users"), orderBy("points", "desc"), limit(50));
+      const querySnapshot = await getDocs(q);
+      let rank = 1;
+      querySnapshot.forEach(doc => {
+        const user = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="rank">${rank}</td>
+          <td>${user.username || "N/A"}</td>
+          <td>${user.points || 0}</td>
+          <td>${user.tier || "Basic"}</td>
+        `;
+        leaderboardTable.appendChild(row);
+        rank++;
+      });
+    }
+
+    loadLeaderboard();
+  </script>
+
+</body>
+</html>

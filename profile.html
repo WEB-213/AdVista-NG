@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile Edit - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .field {
+      margin-bottom: 15px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      background: #334155;
+      color: #f1f5f9;
+      font-size: 16px;
+    }
+    .readonly {
+      background: #475569;
+    }
+    button.save-btn {
+      background: #22c55e;
+      color: #0f172a;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .message {
+      color: #facc15;
+      margin-top: 15px;
+      text-align: center;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <h2>Profile Edit</h2>
+
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="email" class="readonly" readonly />
+    </div>
+
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" />
+    </div>
+
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" id="fullname" />
+    </div>
+
+    <div class="field">
+      <label>Tier</label>
+      <input type="text" id="tier" class="readonly" readonly />
+    </div>
+
+    <div class="field">
+      <label>Joined</label>
+      <input type="text" id="joined" class="readonly" readonly />
+    </div>
+
+    <button class="save-btn" id="saveBtn">Save Changes</button>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, query, where, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUserId;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUserId = user.uid;
+        const userDoc = await getDoc(doc(db, "users", currentUserId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          document.getElementById("email").value = user.email;
+          document.getElementById("username").value = data.username;
+          document.getElementById("fullname").value = data.fullname;
+          document.getElementById("tier").value = data.tier;
+          document.getElementById("joined").value = data.joined;
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const username = document.getElementById("username").value.trim();
+      const fullname = document.getElementById("fullname").value.trim();
+
+      if (!username || !fullname) {
+        document.getElementById("message").textContent = "Please fill all fields.";
+        return;
+      }
+
+      // Check unique username
+      const q = query(
+        collection(db, "users"),
+        where("username", "==", username)
+      );
+      const snapshot = await getDocs(q);
+
+      let taken = false;
+      snapshot.forEach((docSnap) => {
+        if (docSnap.id !== currentUserId) {
+          taken = true;
+        }
+      });
+
+      if (taken) {
+        document.getElementById("message").textContent = "Username is already taken.";
+        return;
+      }
+
+      await updateDoc(doc(db, "users", currentUserId), {
+        username,
+        fullname
+      });
+
+      document.getElementById("message").textContent = "Profile updated successfully!";
+    });
+  </script>
+</body>
+</html>

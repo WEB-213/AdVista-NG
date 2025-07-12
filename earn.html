@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Earn Points - AdVistaNG</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header img {
+      height: 40px;
+    }
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+    .tier-badge {
+      background: #22c55e;
+      color: #0f172a;
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .task-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+    }
+    .task-card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 8px;
+      transition: transform 0.3s ease;
+      position: relative;
+    }
+    .task-card.locked {
+      background: #334155;
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .task-card:hover:not(.locked) {
+      transform: translateY(-3px);
+    }
+    .task-title {
+      font-size: 16px;
+      margin: 0 0 8px;
+    }
+    .task-points {
+      color: #facc15;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    .task-card button {
+      background: #22c55e;
+      border: none;
+      color: #0f172a;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .task-card button:disabled {
+      background: #64748b;
+      cursor: not-allowed;
+    }
+    .ad-container {
+      margin-top: 10px;
+      background: #334155;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button id="logoutBtn">Logout</button>
+  </header>
+
+  <div class="container">
+    <span class="tier-badge" id="tierBadge">Loading tier...</span>
+    <div class="task-list" id="taskList"></div>
+    <button class="upgrade-btn" id="upgradeBtn" style="display:none;">Upgrade Tier</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let userTier = "starter";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        alert("User data not found!");
+        return;
+      }
+
+      const userData = userSnap.data();
+      userTier = userData.tier || "starter";
+      document.getElementById("tierBadge").textContent =
+        userTier.charAt(0).toUpperCase() + userTier.slice(1) + " Tier";
+
+      if (userTier !== "top") {
+        document.getElementById("upgradeBtn").style.display = "inline-block";
+      }
+
+      loadTasks();
+    });
+
+    async function loadTasks() {
+      const tasksCol = collection(db, "tasks");
+      const tasksSnap = await getDocs(tasksCol);
+
+      const taskList = document.getElementById("taskList");
+      taskList.innerHTML = "";
+
+      tasksSnap.forEach((docSnap) => {
+        const task = docSnap.data();
+
+        const unlocked = task.tierAccess.includes(userTier);
+
+        const card = document.createElement("div");
+        card.className = "task-card" + (unlocked ? "" : " locked");
+
+        card.innerHTML = `
+          <p class="task-title">${task.title}</p>
+          <p class="task-points">+${task.points} Points</p>
+          <button ${unlocked ? "" : "disabled"}>${unlocked ? "Start Task" : "Upgrade to Unlock"}</button>
+          <div class="ad-container" style="display:none;"></div>
+        `;
+
+        const button = card.querySelector("button");
+        const adContainer = card.querySelector(".ad-container");
+
+        if (unlocked && task.contentHtml) {
+          button.addEventListener("click", () => {
+            if (adContainer.style.display === "none") {
+              adContainer.style.display = "block";
+              adContainer.innerHTML = task.contentHtml;
+            } else {
+              adContainer.style.display = "none";
+              adContainer.innerHTML = "";
+            }
+          });
+        }
+
+        taskList.appendChild(card);
+      });
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    });
+
+    document.getElementById("upgradeBtn").addEventListener("click", () => {
+      window.location.href = "upgrade.html";
+    });
+  </script>
+</body>
+</html>

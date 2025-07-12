@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upgrade Membership - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1e293b;
+      border-radius: 8px;
+    }
+
+    .current-tier {
+      font-size: 18px;
+      margin-bottom: 20px;
+      color: #22c55e;
+    }
+
+    .tiers {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .tier-card {
+      background: #334155;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .tier-card h3 {
+      margin-top: 0;
+      color: #facc15;
+    }
+
+    .tier-card p {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+
+    .tier-card .price {
+      font-size: 20px;
+      color: #22c55e;
+      margin-bottom: 15px;
+    }
+
+    .tier-card button {
+      background: #facc15;
+      color: #0f172a;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .message {
+      margin-top: 20px;
+      color: #facc15;
+      text-align: center;
+    }
+  </style>
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="window.location.href='dashboard.html'">Back</button>
+  </header>
+
+  <div class="container">
+    <div class="current-tier" id="currentTier">Loading your current tier...</div>
+
+    <div class="tiers">
+      <div class="tier-card">
+        <h3>Mid Tier</h3>
+        <p>Access daily tasks plus some additional tasks.</p>
+        <p class="price">₦1,500</p>
+        <button onclick="redirectToTelegram('Mid Tier')">Request Upgrade</button>
+      </div>
+      <div class="tier-card">
+        <h3>Top Tier</h3>
+        <p>Unlock all tasks and highest earning potential.</p>
+        <p class="price">₦5,000</p>
+        <button onclick="redirectToTelegram('Top Tier')">Request Upgrade</button>
+      </div>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          document.getElementById("currentTier").textContent = `Your Current Tier: ${userData.tier.toUpperCase()}`;
+        } else {
+          document.getElementById("currentTier").textContent = "Error loading your tier.";
+        }
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    window.redirectToTelegram = (tierName) => {
+      const telegramUsername = "AdVistaNG";
+      const message = encodeURIComponent(`Hi, I want to upgrade my AdVistaNG account to ${tierName}.`);
+      const telegramURL = `https://t.me/${telegramUsername}?text=${message}`;
+      window.location.href = telegramURL;
+    }
+  </script>
+
+</body>
+</html>

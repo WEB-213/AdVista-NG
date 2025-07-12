@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - AdVistaNG</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header button {
+      background: #ef4444;
+      border: none;
+      color: #fff;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #22c55e;
+      margin-bottom: 20px;
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      background: #334155;
+      transform: translateY(-3px);
+    }
+
+    .card i {
+      font-size: 30px;
+      color: #22c55e;
+      margin-bottom: 10px;
+    }
+
+    .card span {
+      display: block;
+      color: #f1f5f9;
+      font-size: 16px;
+      font-weight: bold;
+    }
+  </style>
+
+  <!-- FontAwesome -->
+  <script src="https://kit.fontawesome.com/a2e0e6f343.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="AdVistaNG Logo" />
+    <button onclick="logout()">Logout</button>
+  </header>
+
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+
+    <div class="admin-grid">
+      <div class="card" onclick="location.href='admin-users.html'">
+        <i class="fas fa-users"></i>
+        <span>Manage Users</span>
+      </div>
+      <div class="card" onclick="location.href='admin-tasks.html'">
+        <i class="fas fa-tasks"></i>
+        <span>Manage Tasks</span>
+      </div>
+      <div class="card" onclick="location.href='admin-withdrawals.html'">
+        <i class="fas fa-wallet"></i>
+        <span>Withdraw Requests</span>
+      </div>
+      <div class="card" onclick="location.href='admin-settings.html'">
+        <i class="fas fa-cogs"></i>
+        <span>Platform Settings</span>
+      </div>
+      <div class="card" onclick="location.href='admin-notifications.html'">
+        <i class="fas fa-bell"></i>
+        <span>Send Notifications</span>
+      </div>
+      <div class="card" onclick="location.href='admin-transactions.html'">
+        <i class="fas fa-receipt"></i>
+        <span>View Transactions</span>
+      </div>
+      <div class="card" onclick="location.href='admin-leaderboard.html'">
+        <i class="fas fa-trophy"></i>
+        <span>Leaderboard</span>
+      </div>
+      <div class="card" onclick="location.href='admin-payout.html'">
+        <i class="fas fa-money-check-alt"></i>
+        <span>Payout Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    window.logout = () => {
+      signOut(auth).then(() => {
+        window.location.href = "admin-login.html";
+      });
+    };
+  </script>
+</body>
+</html>

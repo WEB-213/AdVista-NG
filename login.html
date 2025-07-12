@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - AdVistaNG</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+    }
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 8px;
+    }
+    .logo {
+      width: 120px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+    h2 {
+      text-align: center;
+      color: #22c55e;
+    }
+    label {
+      margin-top: 15px;
+      display: block;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 4px;
+      background: #334155;
+      color: #f1f5f9;
+      font-size: 16px;
+    }
+    .toggle-password {
+      margin-top: -25px;
+      float: right;
+      margin-right: 10px;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+    .checkbox {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      background: #22c55e;
+      color: #0f172a;
+      padding: 10px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .link {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+    }
+    .link a {
+      color: #22c55e;
+      text-decoration: none;
+    }
+    .error {
+      color: #f87171;
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .spinner {
+      display: none;
+      text-align: center;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <img src="logo.png" alt="AdVistaNG Logo" class="logo" />
+    <h2>Login to AdVistaNG</h2>
+
+    <label for="email">Email Address</label>
+    <input type="email" id="email" placeholder="Enter your email" />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="Enter your password" />
+    <span class="toggle-password" onclick="togglePassword()">Show</span>
+
+    <div class="checkbox">
+      <input type="checkbox" id="rememberMe" />
+      <label for="rememberMe">Remember Me</label>
+    </div>
+
+    <!-- reCAPTCHA -->
+    <div id="recaptcha-container" style="margin-top: 15px;"></div>
+
+    <button id="loginBtn">Login</button>
+
+    <div class="link">
+      <a href="#" id="forgotLink">Forgot Password?</a><br/>
+      <a href="#" id="resendLink">Resend Verification Email</a><br/>
+      <a href="register.html">Don’t have an account? Register</a>
+    </div>
+
+    <div class="error" id="errorMessage"></div>
+    <div class="spinner" id="spinner">Logging in...</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      sendEmailVerification,
+      sendPasswordResetEmail,
+      setPersistence,
+      browserLocalPersistence,
+      browserSessionPersistence
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBUULkGake0AX-QzPYdun4TFVVIcQY05Z4",
+      authDomain: "advistang.firebaseapp.com",
+      projectId: "advistang",
+      storageBucket: "advistang.appspot.com",
+      messagingSenderId: "704637913536",
+      appId: "1:704637913536:web:d13da56c15f419e2f26025"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    let recaptchaVerifier;
+
+    window.onload = () => {
+      recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+        size: 'normal',
+        callback: (response) => {
+          console.log("reCAPTCHA passed");
+        }
+      });
+      recaptchaVerifier.render();
+    };
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const rememberMe = document.getElementById("rememberMe").checked;
+      const errorMessage = document.getElementById("errorMessage");
+      const spinner = document.getElementById("spinner");
+
+      errorMessage.textContent = "";
+      spinner.style.display = "block";
+
+      if (!email || !password) {
+        spinner.style.display = "none";
+        errorMessage.textContent = "Please enter your email and password.";
+        return;
+      }
+
+      setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
+        .then(() => {
+          return signInWithEmailAndPassword(auth, email, password);
+        })
+        .then((userCredential) => {
+          const user = userCredential.user;
+          if (user.emailVerified) {
+            window.location.href = "dashboard.html";
+          } else {
+            spinner.style.display = "none";
+            errorMessage.textContent = "Please verify your email before logging in.";
+          }
+        })
+        .catch((error) => {
+          spinner.style.display = "none";
+          if (error.code === 'auth/user-not-found') {
+            window.location.href = "register.html";
+          } else {
+            errorMessage.textContent = error.message;
+          }
+        });
+    });
+
+    document.getElementById("forgotLink").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const errorMessage = document.getElementById("errorMessage");
+
+      if (!email) {
+        errorMessage.textContent = "Enter your email first.";
+        return;
+      }
+
+      sendPasswordResetEmail(auth, email)
+        .then(() => {
+          errorMessage.textContent = "Password reset email sent!";
+        })
+        .catch((error) => {
+          errorMessage.textContent = error.message;
+        });
+    });
+
+    document.getElementById("resendLink").addEventListener("click", () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorMessage = document.getElementById("errorMessage");
+
+      if (!email || !password) {
+        errorMessage.textContent = "Please enter your email and password to resend verification.";
+        return;
+      }
+
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          if (!user.emailVerified) {
+            return sendEmailVerification(user);
+          } else {
+            errorMessage.textContent = "Your email is already verified!";
+          }
+        })
+        .then(() => {
+          errorMessage.textContent = "Verification email sent again!";
+        })
+        .catch((error) => {
+          errorMessage.textContent = error.message;
+        });
+    });
+  </script>
+
+  <script>
+    function togglePassword() {
+      const passField = document.getElementById("password");
+      const toggleBtn = document.querySelector(".toggle-password");
+      if (passField.type === "password") {
+        passField.type = "text";
+        toggleBtn.textContent = "Hide";
+      } else {
+        passField.type = "password";
+        toggleBtn.textContent = "Show";
+      }
+    }
+  </script>
+
+  <script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js"></script>
+
+</body>
+</html>
